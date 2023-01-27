@@ -58,7 +58,7 @@ Pairs=function(cc){
     mat=outer(cc,cc,paste,sep=';')
     tt=as.vector(mat[upper.tri(mat)])
     do.call("rbind",strsplit(tt,';'))
-    
+
 }
 
 
@@ -101,5 +101,3 @@ datPW%>%group_by(problem_set,comparison)%>%
   summarize(n=n1+n2,nn=n(),prop=n1/n)%>%
   ggplot(aes(n,prop))+geom_point()+geom_hline(yintercept=c(1/6,1/3,1/2,2/3,5/6),linetype="dotted")+
   annotate("text",x=5000,y=c(1/6,1/3,1/2,2/3,5/6),label=c(1/6,1/3,1/2,2/3,5/6))
-
-

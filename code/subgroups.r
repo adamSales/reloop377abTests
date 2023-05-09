@@ -1,16 +1,18 @@
 library(loop.estimator)
-library(tidyverse)
+#library(tidyverse)
+library(dplyr)
+library(purrr)
 library(parallel)
 source('code/reloopFunctions.r')
 load('data/pairwiseData.RData')
 
 
-cl <- makeCluster(4)
+cl <- makeCluster(10)
 ce <- clusterEvalQ(cl,source('code/reloopFunctions.r'))
 ce <- clusterEvalQ(cl,library(loop.estimator))
-ce <- clusterEvalQ(cl,library(tidyverse))
+ce <- clusterEvalQ(cl,library(dplyr))
+ce <- clusterEvalQ(cl,library(purrr))
 
-ce <- clusterEvalQ(cl,library(crossEstimation))
 
 #### covariates
 covNames <- names(datPW)[startsWith(names(datPW),'student_prior')]
@@ -46,9 +48,8 @@ resSubgroups <- parLapply(cl,
                         lapply(c(L=1/3,H=2/3), function(p) {
                           datPW$sub=if(p<.5) datPW[[covName]]<quantile(datPW[[covName]],p) else
                                                 datPW[[covName]]>quantile(datPW[[covName]],p)
-
                           datPW%>%
-                          filter(problem_set=="PSA25TAControl;Treatment 1")%>%
+                          #filter(problem_set=="PSA25TAControl;Treatment 1")%>%
                           filter(sub)%>%
                           split(.,.$problem_set)%>%
                           map(~if(min(table(.x$Z))>9){
@@ -80,3 +81,7 @@ resSubgroups <- parLapply(cl,
         )
 
 save(resSubgroups,file="results/subgroupResults.RData")
+
+
+resSub2=NULL
+for(i in 1:10) for(j in 1:2) resSub2=c(resSub2,resSubgroups[[i]][[j]])

@@ -1,3 +1,9 @@
+writeup/*
+temp/*
+experiment_reports/*
+poster/*
+covariates/*
+
 # History files
 .Rhistory
 .Rapp.history

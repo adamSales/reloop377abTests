@@ -74,10 +74,10 @@ resSubgroups <- parLapply(cl,
                           side=ifelse(p<.5,"Low","High"),
                           ps=.x$problem_set[1]
                         )
-                      ) 
+                      )
                     }
                         )
-                      }     
+                      }
         )
 
 save(resSubgroups,file="results/subgroupResults.RData")

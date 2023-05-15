@@ -1,64 +1,45 @@
-library(tidyverse)
-library(tikzDevice)
-load('data/pairwiseData.RData')
+######################
+## main analysis plots
+######################
 
-load('results/resTotalSlow.RData')
 load('results/contrasts.RData')
 
-#pdf('plots.pdf')
-
-
-
-p<-Contrasts%>%
-  ggplot(aes(ssMult))+
-  geom_dotplot( method="histodot", binwidth = .02 )  +
-    labs( x = "Relative Ratio of Sample Variances", y="" ) +
-    geom_vline( xintercept = 1, col="red" ) +
-  facet_grid(model~comp)+
-    theme(legend.position = "none",
-        panel.grid = element_blank(),
-        axis.title.y = element_blank(),
-        axis.text.y= element_blank(),
-        axis.ticks.y = element_blank(),
-        text=element_text(size=12),
-        strip.text=element_text(size=12,lineheight=0.5))
-
-
-p2<-Contrasts%>%
-  ggplot(aes(model,ssMult))+
-  geom_violin(outlier.shape=NA)+geom_jitter()+facet_wrap(~compSimp,nrow=1)+
-  scale_y_continuous(trans="log10")
-
-
-modContrast
-
 p3<-Contrasts%>%
   filter(model=='combined')%>%
   mutate(
+    dumb="",
     compTxt=
               c(reloopVsSD='ReLOOP\nvs.\nT-Test',
                 reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
                 reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
          compTxt=factor(compTxt,levels=unique(compTxt))
   )%>%
-  ggplot(aes(model,ssMult))+
-  geom_jitter()+geom_boxplot(outlier.shape=NA)+facet_wrap(~compTxt,nrow=1)+
+  ggplot(aes(dumb,ssMult))+
+  geom_jitter()+geom_boxplot(outlier.shape=NA,width=.5)+facet_wrap(~compTxt,nrow=1)+
   scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)
 
-p3<-Contrasts%>%
-  filter(model=='combined')%>%
-  mutate(
-    compTxt=
-              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
-                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
-                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
-         compTxt=factor(compTxt,levels=unique(compTxt))
-  )%>%
-  ggplot(aes(model,ssMult))+
-  geom_jitter()+geom_boxplot(outlier.shape=NA)+facet_wrap(~compTxt,nrow=1)+
-  scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)
+ggsave('figure/mainResults.jpg', plot=p3,   width=6,height=4)
+
 
 p4<-Contrasts%>%
+  mutate(
+    compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt))
+  )%>%
+  ggplot(aes(model,ssMult))+
+  geom_jitter()+geom_boxplot(outlier.shape=NA,width=.5)+facet_wrap(~compTxt,nrow=1)+
+  scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)+theme(axis.text.x = element_text(angle = 45,hjust=1))
+
+ggsave('figure/modelResults.jpg', plot=p4,   width=6,height=4)
+
+######################
+## subgroup analysis plots
+######################
+
+p1<-ContrastsSub%>%
   filter(model=='combined')%>%
   mutate(compTxt=
               c(reloopVsSD='ReLOOP\nvs.\nT-Test',
@@ -66,7 +47,124 @@ p4<-Contrasts%>%
                 reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
          compTxt=factor(compTxt,levels=unique(compTxt)))%>%
 ggplot(aes(compTxt,ssMult))+
-  geom_jitter()+geom_boxplot(outlier.shape=NA)+#facet_wrap(~comp,nrow=1)+
+  geom_jitter()+geom_boxplot(outlier.shape=NA)+
+    geom_hline(yintercept=1)+xlab(NULL)+
+  scale_y_continuous(trans="log10")
+
+ContrastsSub%>%
+mutate(compTxt=
+              c(reloopVsSD='ReLOOP vs. T-Test',
+                reloopPlusVsSD='ReLOOP+ vs. T-Test',
+                reloopPlusVsLoop='ReLOOP+ vs. LOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
+ggplot(aes(ssMult))+
+  geom_histogram(bins=100,fill=NA,color="black",boundary=1)+
+    geom_vline(xintercept=1)+facet_wrap(~compTxt,ncol=1)+
+  scale_x_continuous(trans="log10",breaks=c(.5,.75,1,1.25,1.5,1.75,2,2.5,3,5))+
+  xlab("Sampling Variance Ratio")+
+  theme(axis.text.x = element_text(angle = 45,hjust=1)
+  )
+ggsave("../JEDM/figure/subgroupHistograms.jpg",width=4,height=3)
+
+ssMultC=cut(ContrastsSub$ssMult,c(0,.75,.9,1,1.1,1.25,1.5,2,10))
+table(ssMultC,ContrastsSub$compSimp)
+
+round(table(ssMultC,ContrastsSub$compSimp)/4311,3)
+
+ContrastsSub%>%group_by(compSimp)%>%summarize(mean(ssMult<1))
+
+
+rng=ContrastsSub%>%group_by(compSimp)%>%group_map(~boxplot.stats(.$ssMult)$stats)%>%vapply(range,c(1.1,2.2))%>%range()
+
+ContrastsSub%>%
+  filter(model=='combined')%>%
+  filter(compSimp!='reloopPlusVsSD')%>%
+  mutate(compTxt=
+              c(reloopVsSD='ReLOOP vs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+ vs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+ vs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt)),
+         covName=sub("student_prior_","",covName,fixed=TRUE),
+         covName=sub("problem_set","PS",covName),
+         covName=sub("average","avg",covName),
+         covName=sub("skill_builder","SB",covName),
+         covName=sub("problem","prob.",covName),
+         covName=sub("median","med.",covName))%>%
+ggplot(aes(fct_reorder(covName, ssMult, median),ssMult))+
+  geom_boxplot(outlier.shape=NA)+
+    geom_hline(yintercept=1)+xlab(NULL)+
+  coord_cartesian(ylim=rng)+
+facet_wrap(~compTxt+side,ncol=4)+scale_y_continuous(name="Samping Variance Ratio",trans="log10",breaks=c(.75,.9,1,1.1,1.25,1.5,2))+
+guides(x =  guide_axis(angle = 90))
+ggsave("../JEDM/figure/subgroupBoxplots2.jpg",width=6.5,height=4)
+
+
+p4b<-ContrastsSub%>%
+  filter(model=='combined')%>%
+  mutate(compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
+ggplot(aes(compTxt,ssMult))+
+  geom_jitter()+geom_boxplot(outlier.shape=NA)+
+    geom_hline(yintercept=1)+xlab(NULL)+
+facet_wrap(~covName+side)+scale_y_continuous(trans="log10",limits = c(NA,2))
+
+modelDat=ContrastsSub%>%
+transmute(logn=log(nt+nc),#hmeanN=log(2/(1/nt+1/nc)),
+logY=log(ssMult),PS=PS)%>%
+filter(is.finite(logY),is.finite(logn))
+
+model=lm(logY~splines::bs(logn,4),data=modelDat)
+
+pred=ggpredict(
+  model, vcov.fun = "vcovCR", vcov.type = "CR0",
+  vcov.args = list(cluster = modelDat$PS)
+)
+
+Wald_test(model,vcov="CR0",cluster=modelDat$PS,constraints=constrain_zero("logn",reg_ex=TRUE))
+
+ContrastsSub$n=ContrastsSub$nc+ContrastsSub$nt
+modTTest=lm_robust(log(ssMult)~splines::bs(log(n)),data=subset(ContrastsSub,compSimp=='reloopVsSD'),cluster=PS)
+predTTest=predict(modTTest,subset(ContrastsSub,compSimp=='reloopVsSD'),interval='confidence')
+modLOOP=lm_robust(log(ssMult)~splines::bs(log(n)),data=subset(ContrastsSub,compSimp=='reloopPlusVsLoop'),cluster=PS)
+predLOOP=predict(modTTest,subset(ContrastsSub,compSimp=='reloopPlusVsLoop'),interval='confidence')
+
+ContrastsSub$ypred=NA
+ContrastsSub$lwr=NA
+ContrastsSub$upr=NA
+
+ContrastsSub[ContrastsSub$compSimp=='reloopVsSD',c('ypred','lwr','upr')]=predTTest$fit
+ContrastsSub[ContrastsSub$compSimp=='reloopPlusVsLoop',c('ypred','lwr','upr')]=predLOOP$fit
+
+
+#p5 <-
+
+ContrastsSub%>%
+  filter(compSimp!='reloopPlusVsSD')%>%
+  mutate(compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
+ggplot(aes(log(nt+nc),#2/(1/nt+1/nc),
+      log(ssMult),clust=PS))+
+#scale_x_log10()+#limits=c(10,NA) ) +
+ # scale_y_log10()+
+geom_point(alpha=0.3)+
+geom_ribbon(mapping=aes(ymin = lwr,ymax = upr), alpha = 1,fill='red')+
+geom_line(mapping=aes(x=log(nt+nc),y=ypred),color='black')+#,linewidth=2)+
+#geom_smooth(method="lm_robust",formula=y~splines::bs(x,4),method.args=list(clusters=ContrastsSub$PS[ContrastsSub$compSimp!='reloopPlusVsSD']))#+
+facet_wrap(~compTxt)+#,scales="free_y")+
+geom_hline(yintercept = 0)+
+scale_y_continuous("Sampling Variance Ratio",
+                  breaks=log(c(.75,.9,1,1.1,1.25,1.5,2,3,4,5,6,7)),
+                  labels = c(.75,.9,1,1.1,1.25,1.5,2,3,4,5,6,7))+
+scale_x_continuous("Total Sample Size",breaks=log(c(50,100,200,500,1000,5000,10000,50000)),labels=c(50,100,200,500,1000,5000,10000,50000))
+ggsave("../JEDM/figure/subgroupSampleSize.jpg",width=6.5,height=3)
+
+  #facet_wrap(~comp,nrow=1)+
   scale_y_continuous(name= expression(SE(Alternative)^2~"/SE(ReLOOP)"^2),
                      sec.axis=sec_axis(~.*2,
                                        name=expression(#""%<-%retteB~POOLeR),#
@@ -81,229 +179,82 @@ print(p4)
 dev.off()
 
 
+ContrastsSub%>%
+  filter(compSimp!='reloopPlusVsSD')%>%
+  mutate(compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
+  select(compSimp,ssMult,n)%>%arrange(compSimp,n,ssMult)%>%filter(ssMult<0.8)
+
+#######################################
+## p-values
+
+names(resSub2)=1:length(resSub2)
+
+resSub2=lapply(1:length(resSub2),function(i) cbind(resSub2[[i]],num=i))
+
+estimates=function(res,estimator){
+  if(nrow(res)<3) return(data.frame(Est=NA,SE=NA,p=NA))
+  if(any(is.na(res$Var))) return(data.frame(Est=NA,SE=NA,p=NA))
+  if(min(res$Var)<1e-10) return(data.frame(Est=NA,SE=NA,p=NA))
+  Est=res[ estimator,'Est']
+  SE=sqrt(res[ estimator,'Var'])
+  if("nt"%in%names(res)){
+    nt=res$nt[1]
+    nc=res$nc[2]
+    df=(1/nt+1/nc)^2/(1/nt^2/(nt-1)+1/nc^2/(nc-1))
+  } else df=Inf
+
+  data.frame(num=res$num[1],Est=Est,SE=SE,p=2*pt(-abs(Est/SE),df=df))
+}
+
+pvals=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
+  ~map_dfr(resSub2,estimates,estimator=.))
+
+par(mfrow=c(4,1))
+lapply(pvals,function(ee) hist(ee$p))
+
+pvals=map(pvals,~cbind(.,pBH=p.adjust(.$p,method="fdr")))
+pvals=map(pvals,~cbind(.,pBY=p.adjust(.$p,method="BY")))
+
+significance=rbind(
+Unadjusted=map_dbl(pvals,~sum(.$p<0.05)),
+`Benjamini-Hochberg`=map_dbl(pvals,~sum(.$pBH<0.05)),
+`Benjamini-Yekutieli`=map_dbl(pvals,~sum(.$pBY<0.05)))
+
+colnames(significance)=c("T-Test","LOOP","ReLOOP","ReLOOP+")
+
+print(xtable(significance),file="subgroupSignificance.tex")
 
 
-options(
-       tikzLatexPackages = c(
-        getOption('tikzLatexPackages'),
-        '\\usepackage[T1]{fontenc}',
-        '\\usepackage{graphicx}',
-        '\\usepackage{amsmath,amsfonts,amssymb}',
-        '\\usepackage{bm}',
-        '\\usepackage[utf8]{inputenc}',
-        '\\input{g:/My Drive/iesJohannReloop/ethenExperiments/writeup/notation.tex}'))
+map(pvals,~sum(.$pBY<0.05))
+map(pvals,~mean(.$pBY<0.05))
 
 
-tikz('aied.tex',width=4.7,height=2)
-p3
-dev.off()
+resExcl[[4]]=lapply(1:length(resExcl[[4]]),function(i) cbind(resExcl[[4]][[i]],num=i))
 
 
-p2tot <- ContrastsTot%>%
-  ggplot(aes(model,ssMult))+
-  geom_jitter()+geom_boxplot(outlier.shape=NA)+facet_wrap(~comp,nrow=1)+
-  scale_y_continuous(trans="log10")
+pvalsFull=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
+  ~map_dfr(resExcl[[4]],estimates,estimator=.))
 
-print(p2)
+pvalsFull=map(pvalsFull,~cbind(.,pBH=p.adjust(.$p,method="fdr"),pBY=p.adjust(.$p,method="BY")))
 
-Contrasts <- Contrasts%>%
-  group_by(model,comp)%>%
-  mutate(q1=quantile(ssMult,.25),q3=quantile(ssMult,.75),iqr=q3-q1,
-         outlier=ifelse(ssMult<q1-2*iqr,'low',
-                 ifelse(ssMult>q3+2*iqr,'high','no')))%>%
-  ungroup()
-
-
-#############################
-## pred vs. prior percent correct
-#############################
-studPPC=datPW%>%
-  filter(model=='combined')%>%
-  group_by(user_id)%>%
-  summarize(priorPercentComplete=mean(student_prior_completed_skill_builder_count/student_prior_started_skill_builder_count),pred=mean(completion_prediction),predSD=sd(completion_prediction),nExp=n_distinct(sequence_id),
-            nsb=mean(student_prior_started_skill_builder_count))
-
-with(studPPC,cor(priorPercentComplete,pred,use='pairwise'))
-with(studPPC,cor(priorPercentComplete,pred,use='pairwise',method='spearman'))
-
-hist(studPPC$predSD[studPPC$nExp>1])
-
-studPPC%>%
-  ggplot(aes(priorPercentComplete,pred))+geom_point()+geom_smooth(se=FALSE)+ylim(0,1)+geom_abline(slope=1,intercept=0)
-
-studPPC%>%
-  filter(nExp==1)%>%
-  ggplot(aes(priorPercentComplete,pred))+geom_point()+geom_smooth(se=FALSE)+ylim(0,1)+geom_abline(slope=1,intercept=0)
-
-with(filter(studPPC,nExp==1),cor(priorPercentComplete,pred,use='pairwise'))
-
-mod1=lm(pred~priorPercentComplete,data=filter(studPPC,is.finite(priorPercentComplete),nExp==1))
-mod2=lm(pred~priorPercentComplete*nsb,data=filter(studPPC,is.finite(priorPercentComplete),nExp==1))
-
-############################
-### performance vs within-sample
-############################
-
-
-p=datPW%>%
-  filter(model=='combined')%>%
-  group_by(problem_set)%>%
-  summarize(rho=cor(completion_prediction,completion_target))%>%
-  left_join(
-    filter(Contrasts,model=='combined',
-          compSimp=='reloopVsSD'),
-    by=c("problem_set"="ps")
-  )%>%
-#  filter(rho<0.2,ssMult>1.3)%>%pull(problem_set)
-  ggplot(aes(rho^2,ssMult))+geom_point()+geom_smooth(method="rlm",formula=y~poly(x,2),se=FALSE)+
-  labs(y='V(SD)/V(ReloopOLS)')
-print(p)
-
-
-p=datPW%>%
-  group_by(problem_set)%>%
-  summarize(rho=cor(completion_prediction,completion_target))%>%
-  left_join(
-    filter(Contrasts,model=='combined',
-           compSimp=='reloopPlusVsLoop'),
-    by=c("problem_set"="ps")
-  )%>%
-#  filter(rho<0.2,ssMult>1.3)%>%pull(problem_set)
-  ggplot(aes(rho^2,ssMult))+geom_point()+geom_smooth(method="lm")+#,formula=y~poly(x,2),se=FALSE)+
-  labs(y='V(Loop)/V(ReloopPlus)')
-print(p)
-
-
-p=datPW%>%
-  group_by(problem_set)%>%
-  summarize(logn=log(n()))%>%
-  right_join(
-    filter(Contrasts,model=='combined',
-          compSimp=='reloopVsSD'),
-    by=c("problem_set"="ps")
-  )%>%
-#  filter(rho<0.2,ssMult>1.3)%>%pull(problem_set)
-  ggplot(aes(logn,ssMult))+geom_point()+geom_smooth()+
-  labs(y='V(SD)/V(ReloopOLS)')
-print(p)
-
-
-p=datPW%>%
-  group_by(problem_set)%>%
-  summarize(meanYc=mean(completion_target[Z==0]),
-            logitYc=qlogis(meanYc))%>%
-  right_join(
-    filter(Contrasts,model=='combined',
-          compSimp=='reloopVsSD'),
-    by=c("problem_set"="ps")
-  )%>%
-#  filter(rho<0.2,ssMult>1.3)%>%pull(problem_set)
-  ggplot(aes(logitYc,ssMult))+geom_point()+geom_smooth()+
-  labs(y='V(SD)/V(ReloopOLS)')
-print(p)
-
-
-p=datPW%>%
-  group_by(problem_set)%>%
-  summarize(meanYcHat=mean(completion_prediction[Z==0]),
-            logitYcHat=qlogis(meanYcHat))%>%
-  right_join(
-    filter(Contrasts,model=='combined',
-          compSimp=='reloopVsSD'),
-    by=c("problem_set"="ps")
-  )%>%
-#  filter(rho<0.2,ssMult>1.3)%>%pull(problem_set)
-  ggplot(aes(logitYcHat,ssMult))+geom_point()+geom_smooth()+
-  labs(y='V(SD)/V(ReloopOLS)')
-print(p)
-
-p=datPW%>%
-  group_by(problem_set)%>%
-  summarize(logn=log(n()))%>%
-  right_join(
-    filter(Contrasts,model=='combined',
-           compSimp=='reloopPlusVsLoop'),
-    by=c("problem_set"="ps")
-  )%>%
-#  filter(rho<0.2,ssMult>1.3)%>%pull(problem_set)
-  ggplot(aes(logn,ssMult))+geom_point()+geom_smooth()+
-  scale_x_continuous(breaks=6:10,labels=round(exp(6:10),-3))+
-  labs(y='V(Loop)/V(ReloopPlus)')
-print(p)
-
-Contrasts%>%
-  group_by(ps)%>%
-  summarize(loopVsSD=ssMult[compSimp=='reloopPlusVsSD']/ssMult[compSimp=='reloopPlusVsLoop'],reloopVsSD=ssMult[compSimp=='reloopVsSD'])%>%
-  ggplot(aes(loopVsSD,reloopVsSD))+geom_point()+geom_smooth()
-
-############################
-### performance vs CV
-############################
-cv0=read_csv('data/cross_validation_results.csv')
-crosswalk <- read_csv('data/exp_norm_map.csv')
+significanceFull=rbind(
+Unadjusted=map_dbl(pvalsFull,~sum(.$p<0.05)),
+`Benjamini-Hochberg`=map_dbl(pvalsFull,~sum(.$pBH<0.05)),
+`Benjamini-Yekutieli`=map_dbl(pvalsFull,~sum(.$pBY<0.05)))
+colnames(significanceFull)=c("T-Test","LOOP","ReLOOP","ReLOOP+")
+print(xtable(significanceFull),file="../JEDM/fullSignificance.tex")
 
 
 
-cv <- left_join(cv0,crosswalk,by=c("target_sequence"="normal_id"))%>%
-  filter(!is.na(experiment_id))%>%
-  group_by(experiment_id)%>%
-  summarize(rho=cor(completion_target,completion_prediction),n=n(),mse=mean((completion_target-completion_prediction)^2))
+map( pvalsFull,~sum(.$p<0.05))
+map( pvalsFull,~mean(.$p<0.05))
 
-p=Contrasts%>%
-  filter(model=='combined',compSimp=='reloopVsSD')%>%
-  mutate(experiment_id=map_chr(strsplit(ps,'Control|Treatment'),~.[1]))%>%
-  group_by(experiment_id)%>%
-  summarize(avgSSmult=mean(ssMult))%>%
-  left_join(cv)%>%
-  ggplot(aes(rho,avgSSmult))+geom_point()+geom_smooth(se=FALSE)+
-  labs(y='V(Loop)/V(ReloopPlus) (mean)',x='out of sample cor(y,yhat)')
-print(p)
+map( pvalsFull,~sum(.$pBH<0.05))
+map( pvalsFull,~mean(.$pBH<0.05))
 
-p=Contrasts%>%
-  filter(model=='combined')%>%
-  mutate(experiment_id=map_chr(strsplit(ps,'Control|Treatment'),~.[1]))%>%
-  group_by(experiment_id)%>%
-  summarize(avgSSmult=mean(ssMult))%>%
-  left_join(cv)%>%
-  ggplot(aes(mse,avgSSmult))+geom_point()+geom_smooth(se=FALSE)+
-  labs(y='V(Loop)/V(ReloopPlus) (mean)',x='out of sample mse(y,yhat)')
-print(p)
-
-cvMeas=read_csv('data/cross_validation_metrics.csv')
-
-p=Contrasts%>%
-  filter(model=='combined')%>%
-  mutate(experiment_id=map_chr(strsplit(ps,'Control|Treatment'),~.[1]))%>%
-  group_by(experiment_id)%>%
-  summarize(avgSSmult=mean(ssMult))%>%
-  left_join(cvMeas)%>%filter(model=='combined')%>%
-  ggplot(aes(completion_mse,avgSSmult))+geom_point()+geom_smooth(se=FALSE)+
-  labs(y='V(Loop)/V(ReloopPlus) (mean)',x='out of sample mse(y,yhat)')
-print(p)
-
-p=Contrasts%>%
-  filter(model=='combined')%>%
-  mutate(experiment_id=map_chr(strsplit(ps,'Control|Treatment'),~.[1]))%>%
-  group_by(experiment_id)%>%
-  summarize(avgSSmult=mean(ssMult))%>%
-  left_join(cvMeas)%>%filter(model=='combined')%>%
-  mutate(logSampleSize=log(sample_size))%>%
-  select(avgSSmult,logSampleSize,starts_with('completion_'))%>%
-  pivot_longer(-avgSSmult,names_to='meas',values_to='measure')%>%
-  ggplot(aes(measure,avgSSmult))+geom_point()+geom_smooth(method='lm')+
-  labs(y='V(Loop)/V(ReloopPlus) (mean)')+facet_wrap(~meas,scales="free_x")
-print(p)
-### out of sample vs in sample rho
-
-p=datPW%>%
-  group_by(sequence_id,user_id)%>%
-  summarize(completion_prediction=mean(completion_prediction),completion_target=mean(completion_target))%>%
-  #xtabs(~completion_target,data=.)
-  group_by(sequence_id)%>%
-  summarize(rhoInSample=cor(completion_prediction,completion_target))%>%
-  left_join(rename(cv,rhoOutOfSample=rho,sequence_id=experiment_id))%>%
-  mutate(cor=paste('cor=',round(cor(rhoOutOfSample,rhoInSample,use='pairwise'),3)),pval=paste('p=',round(cor.test(rhoOutOfSample,rhoInSample)$p.value,3)),x=c(.3,rep(NA,length(sequence_id)-1)),y1=c(.65,rep(NA,length(sequence_id)-1)),y2=c(.6,rep(NA,length(sequence_id)-1)))%>%
-  ggplot(aes(rhoOutOfSample,rhoInSample))+geom_point()+geom_smooth(method='lm')+geom_text(aes(x=x,y=y1,label=cor),check_overlap=TRUE)+geom_text(aes(x=x,y=y2,label=pval),check_overlap=TRUE)
-print(p)
-
-dev.off()
+map( pvalsFull,~sum(.$pBY<0.05))
+map( pvalsFull,~mean(.$pBY<0.05))

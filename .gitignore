@@ -4,6 +4,14 @@ experiment_reports/*
 poster/*
 covariates/*
 
+*.r~
+*.zip
+*.r\#
+*.out
+
+
+*.ini
+
 # History files
 .Rhistory
 .Rapp.history

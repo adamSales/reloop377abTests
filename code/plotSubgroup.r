@@ -4,6 +4,7 @@ library(purrr)
 library(ggplot2)
 library(ggeffects)
 library(clubSandwich)
+library(estimatr)
 
 source('code/reloopFunctions.r')
 load('data/pairwiseData.RData')
@@ -74,7 +75,7 @@ makeContrast=function(res,ols=TRUE){
                  'reloopPlusVsLoop'),
                each=length(cont1)),
       ssMult=ssMult,
-      model=res[[1]]$model[1]   
+      model=res[[1]]$model[1]
     )
   )
 }
@@ -163,7 +164,7 @@ filter(is.finite(logY),is.finite(logn))
 model=lm(logY~splines::bs(logn,4),data=modelDat)
 
 pred=ggpredict(
-  model, vcov.fun = "vcovCR", vcov.type = "CR0", 
+  model, vcov.fun = "vcovCR", vcov.type = "CR0",
   vcov.args = list(cluster = modelDat$PS)
 )
 
@@ -183,7 +184,7 @@ ContrastsSub[ContrastsSub$compSimp=='reloopVsSD',c('ypred','lwr','upr')]=predTTe
 ContrastsSub[ContrastsSub$compSimp=='reloopPlusVsLoop',c('ypred','lwr','upr')]=predLOOP$fit
 
 
-#p5 <- 
+#p5 <-
 
 ContrastsSub%>%
   filter(compSimp!='reloopPlusVsSD')%>%
@@ -223,6 +224,15 @@ print(p4)
 dev.off()
 
 
+ContrastsSub%>%
+  filter(compSimp!='reloopPlusVsSD')%>%
+  mutate(compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
+  select(compSimp,ssMult,n)%>%arrange(compSimp,n,ssMult)%>%filter(ssMult<0.8)
+
 #######################################
 ## p-values
 
@@ -249,7 +259,7 @@ pvals=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
   ~map_dfr(resSub2,estimates,estimator=.))
 
 par(mfrow=c(4,1))
-lapply(pvals,function(ee) hist(ee$p))  
+lapply(pvals,function(ee) hist(ee$p))
 
 pvals=map(pvals,~cbind(.,pBH=p.adjust(.$p,method="fdr")))
 pvals=map(pvals,~cbind(.,pBY=p.adjust(.$p,method="BY")))
@@ -327,4 +337,3 @@ p4<-Contrasts%>%
   scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)+theme(axis.text.x = element_text(angle = 45,hjust=1))
 
 ggsave('../JEDM/figure/modelResults.jpg', plot=p4,   width=6,height=4)
-

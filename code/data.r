@@ -1,8 +1,8 @@
 library(tidyverse)
 
-dat <- read_csv('experiment_results.csv')
+dat <- read_csv('data/experiment_results.csv')
 
-crosswalk <- read_csv('exp_norm_map.csv')
+crosswalk <- read_csv('data/exp_norm_map.csv')
 
 dat <- left_join(dat,crosswalk,by=c("sequence_id"="experiment_id"))
 
@@ -20,7 +20,7 @@ datSp <- lapply(datSp,function(dd){
 
 dat <- reduce(datSp,bind_rows)
 
-save(dat,file='combinedData.RData')
+save(dat,file='processedData/combinedData.RData')
 
 dat%>%select(starts_with('student_prior'))%>%sapply(function(x) mean(is.na(x)))
 
@@ -43,7 +43,7 @@ dat <- dat%>%filter(!is.na(assigned_condition),assigned_condition!="Not Assigned
     mutate(Z=ifelse(startsWith(assigned_condition,"Treatment"),1,0),
            ctl=ifelse(startsWith(assigned_condition,"Control"),1,0))
 
-save(dat,file='combinedData.RData')
+save(dat,file='processedData/combinedData.RData')
 
 dat%>%group_by(sequence_id)%>%
     summarize(n=n(),p=mean(Z))%>%
@@ -87,7 +87,7 @@ datPW <- datPW%>%
   select(-cond1)%>%
   ungroup()
 
-save(datPW,file='pairwiseData.RData')
+save(datPW,file='processedData/pairwiseData.RData')
 
 
 datPW%>%group_by(problem_set,comparison)%>%

@@ -15,15 +15,16 @@ allEst <- function(Y,Tr,Z,yhat,ps="ps",model="mod",fast=TRUE){
     rbind(
       simpDiff=simpDiff(Y=Y,Tr=Tr),
       rebar=rebar(Y=Y,Tr=Tr,yhat=yhat),
-      reloopOLS=loop(Y=Y,Tr=Tr,Z=cbind(yhat=yhat),pred=loop_ols,p=if(condNs) mean(Tr) else .5),
-      reloopRF=loop(Y=Y,Tr=Tr,Z=cbind(yhat=yhat),pred=loop_rf,p=if(condNs) mean(Tr) else .5),
-      loop=loop(Y=Y,Tr=Tr,Z=Z,p=if(condNs) mean(Tr) else .5),
+      reloopOLS=loop(Y=Y,Tr=Tr,Z=cbind(yhat=yhat),pred=loop_ols,p= .5),
+      reloopRF=loop(Y=Y,Tr=Tr,Z=cbind(yhat=yhat),pred=loop_rf,p= .5),
+      loop=loop(Y=Y,Tr=Tr,Z=Z,p= .5),
       reloopPlus=loop(Y=Y,Tr=Tr,Z=Z,pred=if(fast) reloop else reloop_slow,yhat=yhat,p= .5)
     ))
   names(out)=c('Est','Var')
   out$method=rownames(out)
   out$ps=ps
   out$model=model
+  if(sample(1:10)[1]==1) cat('.')
 #  attr(out,"ps") <- ps
   out
 }

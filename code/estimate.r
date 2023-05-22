@@ -4,7 +4,7 @@ load('processedData/pairwiseData.RData')
 #### covariates
 covNames <- names(datPW)[startsWith(names(datPW),'student_prior')]
 p=length(covNames)
-mai
+
 exl=datPW%>%group_by(problem_set,model)%>%
   summarize(
     n=n(),
@@ -42,10 +42,21 @@ if(nclust>0){
 #################################################################
 LAP <- if(nclust>0) function(X,FUN,...) parLapply(cl,X,FUN,...) else function(X,FUN,...) lapply(X,FUN,...)
 
-resTotal <-
-  datPW%>%
-  split(~problem_set+model)%>%
-  LAP(.,function(.x) try(
+estMain <- TRUE
+if(file.exists('results/resTotalSlow.RData'))
+ if(file.mtime('results/resTotalSlow.RData')> 
+    max(
+      file.mtime('code/estimate.r'),
+      file.mtime('processedData/pairwiseData.RData')
+      file.mtime('code/reloopFunctions.r')))
+        estMain <- FALSE
+
+if(full | estMain){
+  print('main estimation')
+  resTotal <-
+    datPW%>%
+    split(~problem_set+model)%>%
+    LAP(.,function(.x) try(
                                 allEst(
                                   Y=.x$completion_target,
                                   Tr=.x$Z,
@@ -58,9 +69,9 @@ resTotal <-
                               )
             )
 
-save(resTotal,file='results/resTotalSlow.RData')
+  save(resTotal,file='results/resTotalSlow.RData')
 
-
+} else load('results/resTotalSlow.RData')
 
 #### hard part: we have 5 sample size-based restrictions (including "none") and 4 p-value-based restrictions, leading to 20 possibilities. DECISION (prior to seeing results! tho this is unverifiable--you have to trust me): report results for restrictive conditions (p>.1, excl) and discuss differences with other sets of restictions. Provide plots for all combinations in the appendix.
 
@@ -84,7 +95,19 @@ save(Contrasts,file='results/contrasts.RData')
 #### Subgroup Analysis
 #################################################################
 
-resSubgroups <- LAP(
+estSub <- TRUE
+if(file.exists('results/subgroupResults.RData'))
+ if(file.mtime('results/subgroupResults.RData')> 
+    max(
+      file.mtime('code/estimate.r'),
+      file.mtime('processedData/pairwiseData.RData')
+      file.mtime('code/reloopFunctions.r')))
+        estMain <- FALSE
+
+if(full | estSub){
+  print('subgroup estimation')
+
+  resSubgroups <- LAP(
                       c(covNames,'completion_prediction')%>%setNames(.,.),
                       function(covName){
                         lapply(c(L=1/3,H=2/3), function(p) {
@@ -122,7 +145,12 @@ resSubgroups <- LAP(
                       }
         )
 
-save(resSubgroups,file="results/subgroupResults.RData")
+  save(resSubgroups,file="results/subgroupResults.RData")
+
+} else{
+  print('skipping subgroup estimation')
+  load('results/subgroupResults.RData')
+}
 
 resSub2=NULL
 for(i in 1:10) for(j in 1:2) resSub2=c(resSub2,resSubgroups[[i]][[j]])

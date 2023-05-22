@@ -1,4 +1,4 @@
-library(tidyverse)
+#library(tidyverse)
 
 dat <- read_csv('data/experiment_results.csv')
 
@@ -9,8 +9,8 @@ dat <- left_join(dat,crosswalk,by=c("sequence_id"="experiment_id"))
 datSp <- split(dat,dat$sequence_id,drop=TRUE)
 
 datSp <- lapply(datSp,function(dd){
-    priors <- read_csv(paste0('covariates/',dd$sequence_id[1],'/priors.csv'))
-    alog <- read_csv(paste0('covariates/',dd$sequence_id[1],'/exp_alogs.csv'))
+    priors <- read_csv(paste0('data/covariates/',dd$sequence_id[1],'/priors.csv'))
+    alog <- read_csv(paste0('data/covariates/',dd$sequence_id[1],'/exp_alogs.csv'))
     dd <- left_join(dd,priors,by=c("user_id"="student_id"))%>%
         left_join(select(alog,student_id,assigned_condition),by=c("user_id"="student_id"))
     dd

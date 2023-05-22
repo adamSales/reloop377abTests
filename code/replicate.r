@@ -13,7 +13,11 @@ library(estimatr)
 
 nclust <- commandArgs(TRUE)
 
+full <- FALSE
+
 if(length(nclust)==0) nclust <- 0 else nclust <- as.numeric(nclust)
+
+print(nclust)
 
 if(nclust>0){
   cl <- makeCluster(nclust)
@@ -38,9 +42,19 @@ source('code/reloopFunctions.r')
 ## mean-imputation for covariates
 ## format the data into pairwise comparisons
 ## create processedData/datPW.RData
-source('code/data.r')
+runData <- TRUE
+if(file.exists('processedData/pairwiseData.RData'))
+  if(file.mtime('processedData/pairwiseData.RData')>file.mtime('code/data.r'))
+    runData <- FALSE
+
+if(runData | full){
+  print('processing data')
+  source('code/data.r')
+} else print('skipping data')
 
 ### estimate effects & standard errors
+print('estimation')
 source('code/estimate.r')
 
+print('plots')
 source('code/plots.r')

@@ -24,7 +24,7 @@ allEst <- function(Y,Tr,Z,yhat,ps="ps",model="mod",fast=TRUE){
   out$method=rownames(out)
   out$ps=ps
   out$model=model
-  if(sample(1:10)[1]==1) cat('.')
+  cat('.')
 #  attr(out,"ps") <- ps
   out
 }

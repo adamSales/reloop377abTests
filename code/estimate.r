@@ -19,7 +19,7 @@ exl=datPW%>%group_by(problem_set,model)%>%
     inbetween=min(nc,nt)>=11,
     excl=min(nc,nt)>=(p+2)*5+1
   )%>%
-  filter(vY1>0,vY0>0)
+  filter(vY1>0,vY0>0,pval>0.1,excl)
 
 
 ### exclusion criteria:
@@ -29,7 +29,12 @@ exl=datPW%>%group_by(problem_set,model)%>%
 ### exclusive: min(n_C,n_T)>=(p+2)*5+1 so you have 5 samples per predictor--popular rule of thumb(
 ### in-between: min(n_C,n_T)>=10+1 so you have 5 samples per predictor in ReLoop (ie just remnant)
 
+#### hard part: we have 5 sample size-based restrictions (including "none") and 4 p-value-based restrictions, leading to 20 possibilities. DECISION (prior to seeing results! tho this is unverifiable--you have to trust me): report results for restrictive conditions (p>.1, excl) and discuss differences with other sets of restictions. Provide plots for all combinations in the appendix.
+
+
 datPW <- filter(datPW,problem_set%in%exl$problem_set)
+
+
 
 if(nclust>0){
   clusterExport(cl,"datPW")
@@ -46,42 +51,13 @@ estMain <- TRUE
 if(file.exists('results/resTotalSlow.RData'))
  if(file.mtime('results/resTotalSlow.RData')> 
     max(
-      file.mtime('code/estimate.r'),
-      file.mtime('processedData/pairwiseData.RData')
+      file.mtime('code/estimateMain.r'),
+      file.mtime('processedData/pairwiseData.RData'),
       file.mtime('code/reloopFunctions.r')))
         estMain <- FALSE
 
-if(full | estMain){
-  print('main estimation')
-  resTotal <-
-    datPW%>%
-    split(~problem_set+model)%>%
-    LAP(.,function(.x) try(
-                                allEst(
-                                  Y=.x$completion_target,
-                                  Tr=.x$Z,
-                                  Z=as.matrix(.x[,covNames]),
-                                  yhat=as.matrix(.x[,'completion_prediction']),
-                                  ps=.x$problem_set[1],
-                                  model=.x$model[1],
-                                  fast=FALSE
-                                )
-                              )
-            )
 
-  save(resTotal,file='results/resTotalSlow.RData')
-
-} else load('results/resTotalSlow.RData')
-
-#### hard part: we have 5 sample size-based restrictions (including "none") and 4 p-value-based restrictions, leading to 20 possibilities. DECISION (prior to seeing results! tho this is unverifiable--you have to trust me): report results for restrictive conditions (p>.1, excl) and discuss differences with other sets of restictions. Provide plots for all combinations in the appendix.
-
-resExcl<- map(resTotal,
-              function(res)
-                res[
-                  exl$excl[exl$model==res[[1]]$model[1]]&
-                  exl$pval[exl$model==res[[1]]$model[1]]>0.1])
-
-names(resExcl)=vapply(resExcl,function(x) x[[1]]$model[1],'a')
+source('code/estimateMain.r')
 
 
 Contrasts=map_dfr(resExcl,makeContrast)
@@ -100,7 +76,7 @@ if(file.exists('results/subgroupResults.RData'))
  if(file.mtime('results/subgroupResults.RData')> 
     max(
       file.mtime('code/estimate.r'),
-      file.mtime('processedData/pairwiseData.RData')
+      file.mtime('processedData/pairwiseData.RData'),
       file.mtime('code/reloopFunctions.r')))
         estMain <- FALSE
 
@@ -117,27 +93,27 @@ if(full | estSub){
                           filter(model=='combined')%>%
                           filter(sub)%>%
                           split(.,.$problem_set)%>%
-                          map(~if(min(table(.x$Z))>9){
+                          map(function(x) if(min(table(x$Z))>9){
                               try(
                                 cbind(
                                   allEst(
-                                    Y=.x$completion_target,
-                                    Tr=.x$Z,Z=as.matrix(.x[,covNames]),
-                                    yhat=as.matrix(.x[,'completion_prediction']),
-                                    ps=.x$problem_set[1],
-                                    model=unique(.x$model)),
-                                  nt=sum(.x$Z),
-                                  nc=sum(1-.x$Z),
+                                    Y=x$completion_target,
+                                    Tr=x$Z,Z=as.matrix(x[,covNames]),
+                                    yhat=as.matrix(x[,'completion_prediction']),
+                                    ps=x$problem_set[1],
+                                    model=unique(x$model)),
+                                  nt=sum(x$Z),
+                                  nc=sum(1-x$Z),
                                   covName=covName,
                                   side=ifelse(p<.5,"Low","High")
                             )
                           )
                         } else data.frame(
-                          nt=sum(.x$Z),
-                          nc=sum(1-.x$Z),
+                          nt=sum(x$Z),
+                          nc=sum(1-x$Z),
                           covName=covName,
                           side=ifelse(p<.5,"Low","High"),
-                          ps=.x$problem_set[1]
+                          ps=x$problem_set[1]
                         )
                       )
                     }

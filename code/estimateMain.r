@@ -6,7 +6,13 @@ if(full | estMain){
     split(~problem_set+model)%>%
     LAP(.,function(x) {
       #cat(".")
-      try(
+      filename <- paste0('results/miniResults/',x$problem_set[1],x$model[1],'.RData')
+      if(file.exists(filename)){
+        load(filename)
+        return(out)
+      }
+
+      out <- try(
                                 allEst(
                                   Y=x$completion_target,
                                   Tr=x$Z,
@@ -17,6 +23,8 @@ if(full | estMain){
                                   fast=FALSE
                                 )
                               )
+      save(out,file=filename)
+      out                                
     }
             )
 

@@ -20,12 +20,15 @@ if(length(nclust)==0) nclust <- 0 else nclust <- as.numeric(nclust)
 print(nclust)
 
 if(nclust>0){
-  cl <- makeCluster(nclust, outfile="")
-  ce <- clusterEvalQ(cl,source('code/reloopFunctions.r'))
-  ce <- clusterEvalQ(cl,library(loop.estimator))
-  ce <- clusterEvalQ(cl,library(dplyr))
-  ce <- clusterEvalQ(cl,library(readr))
-  ce <- clusterEvalQ(cl,library(purrr))
+  if(.Platform$OS.type=='windows'){ 
+    sock <- TRUE
+    cl <- makeCluster(nclust, outfile="")
+    ce <- clusterEvalQ(cl,source('code/reloopFunctions.r'))
+    ce <- clusterEvalQ(cl,library(loop.estimator))
+    ce <- clusterEvalQ(cl,library(dplyr))
+    ce <- clusterEvalQ(cl,library(readr))
+    ce <- clusterEvalQ(cl,library(purrr))
+  } else sock <- FALSE
 }
 
 

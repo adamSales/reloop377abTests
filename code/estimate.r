@@ -36,7 +36,7 @@ datPW <- filter(datPW,problem_set%in%exl$problem_set)
 
 
 
-if(nclust>0){
+if(nclust>0 & sock){
   clusterExport(cl,"datPW")
   clusterExport(cl,"covNames")
 }
@@ -45,7 +45,13 @@ if(nclust>0){
 #################################################################
 #### Main Analysis
 #################################################################
-LAP <- if(nclust>0) function(X,FUN,...) parLapply(cl,X,FUN,...) else function(X,FUN,...) lapply(X,FUN,...)
+LAP <- if(nclust>0){
+  if(sock){
+     function(X,FUN,...) parLapply(cl,X,FUN,...) 
+  } else {
+    function(X,FUN,...) mclapply(X,FUN,mc.cores=nclust,mc.preschedule=FALSE,...)
+  }
+} else function(X,FUN,...) lapply(X,FUN,...)
 
 estMain <- TRUE
 if(file.exists('results/resTotalSlow.RData'))

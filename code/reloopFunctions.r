@@ -66,6 +66,8 @@ makeContrast=function(res,ols=TRUE){
 
   ssMult=c(cont1,cont2,cont3)
 
+  model=sapply(res,function(x) x$model[1])
+
 
   out <- data.frame(
     comp=rep(c('/n$/\frac{\\varhat(\\tsd)}{\\varhat(\\trc)}$\\n',
@@ -77,7 +79,7 @@ makeContrast=function(res,ols=TRUE){
                    'reloopPlusVsLoop'),
                  each=length(cont1)),
     ssMult=ssMult,
-    model=res[[1]]$model[1]
+    model=c(model,model,model)
   )
 
   if('covName'%in%colnames(res[[1]])){

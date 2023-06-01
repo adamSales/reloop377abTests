@@ -25,10 +25,10 @@ if(full | estGen){
                                 )
                               )
       save(out,file=filename)
-      out                                
+      out
     }
             )
 
-  save(resTotal,file='results/resGender.RData')
+  save(resGender,file='results/resGender.RData')
 
 } else load('results/resGender.RData')

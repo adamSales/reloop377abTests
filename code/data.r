@@ -193,8 +193,8 @@ exlg=datPWg%>%group_by(problem_set,male)%>%
 
 
 keepPSg <- intersect(
-  exlg%>%filter(inbetween,pval>0.1,male)%>%pull(problem_set)%>%unique(),
-  exlg%>%filter(inbetween,pval>0.1,!male)%>%pull(problem_set)%>%unique())
+  exlg%>%filter(inbetween,pval>0.1,male=="M")%>%pull(problem_set)%>%unique(),
+  exlg%>%filter(inbetween,pval>0.1,male=="F")%>%pull(problem_set)%>%unique())
 
 datPWg <- filter(datPWg,problem_set%in%keepPSg)
 

@@ -19,7 +19,7 @@ if(nclust>0 & sock){
 #################################################################
 LAP <- if(nclust>0){
   if(sock){
-     function(X,FUN,...) parLapply(cl,X,FUN,...) 
+     function(X,FUN,...) parLapply(cl,X,FUN,...)
   } else {
     function(X,FUN,...) mclapply(X,FUN,mc.cores=nclust,mc.preschedule=FALSE,...)
   }
@@ -27,7 +27,7 @@ LAP <- if(nclust>0){
 
 estMain <- TRUE
 if(file.exists('results/resTotalSlow.RData'))
- if(file.mtime('results/resTotalSlow.RData')> 
+ if(file.mtime('results/resTotalSlow.RData')>
     max(
       file.mtime('code/estimateMain.r'),
       file.mtime('processedData/pairwiseData.RData'),
@@ -51,7 +51,7 @@ save(Contrasts,file='results/contrasts.RData')
 
 estSub <- TRUE
 if(file.exists('results/subgroupResults.RData'))
- if(file.mtime('results/subgroupResults.RData')> 
+ if(file.mtime('results/subgroupResults.RData')>
     max(
       file.mtime('code/estimateSubgroup.r'),
       file.mtime('processedData/pairwiseData.RData'),
@@ -80,7 +80,7 @@ save(ContrastsSub,file='results/contrastsSub.RData')
 
 estGen <- TRUE
 if(file.exists('results/resGender.RData'))
- if(file.mtime('results/resGender.RData')> 
+ if(file.mtime('results/resGender.RData')>
     max(
       file.mtime('code/estimateGender.r'),
       file.mtime('processedData/pairwiseDataGender.RData'),
@@ -96,7 +96,7 @@ save(ContrastsGender,file='results/contrastsGender.RData')
 
 
 
-################## 
+##################
 ### Post Stratification
 #################
 
@@ -111,7 +111,7 @@ andy = 1131)
 
 pmale=sum(inferredGender[c('male','mostly_male')])/sum(inferredGender)
 
-PS <- sapply(unique(ContrastsGender$problem_set),
+PS <- sapply(unique(ContrastsGender$ps),
              function(ps){
                resM <- resGender[[paste0('M.',ps)]]
                resF <- resGender[[paste0('F.',ps)]]

@@ -10,7 +10,7 @@ library(ggeffects)
 library(clubSandwich)
 library(estimatr)
 library(forcats)
-library(gridExtra)
+library(ggpmisc)
 
 nclust <- commandArgs(TRUE)
 
@@ -21,7 +21,7 @@ if(length(nclust)==0) nclust <- 0 else nclust <- as.numeric(nclust)
 print(nclust)
 
 if(nclust>0){
-  if(.Platform$OS.type=='windows'){ 
+  if(.Platform$OS.type=='windows'){
     sock <- TRUE
     cl <- makeCluster(nclust, outfile="")
     ce <- clusterEvalQ(cl,source('code/reloopFunctions.r'))

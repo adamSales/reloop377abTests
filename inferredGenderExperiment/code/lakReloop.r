@@ -1,8 +1,9 @@
 library(tidyverse)
 library(loop.estimator)
 
-expMale <- read_csv('../results/male_experiment_results.csv')
-expOth <- read_csv('../results/non_male_experiment_results.csv')
+expMale <- read_csv('data/male_experiment_results.csv')
+expOth <- read_csv('data/non_male_experiment_results.csv')
+
 
 dim(expMale)
 dim(expOth)
@@ -23,9 +24,15 @@ expOth <- expOth%>%
   ungroup()%>%
   mutate(male=FALSE)
 
+datGen <- bind_rows(expMale,expOth)
 
 
-dat <- bind_rows(expMale,expOth)
+
+datPWg <- inner_join(
+  select(datPW,-completion_prediction),
+  select(datGen,model,sequence_id,assignment_log_id,user_id,completion_prediction,male)
+)
+
 
 crosswalk <- read_csv('../../ethenExperiments/exp_norm_map.csv')
 
@@ -34,8 +41,8 @@ dat <- left_join(dat,crosswalk,by=c("sequence_id"="experiment_id"))
 datSp <- split(dat,dat$sequence_id,drop=TRUE)
 
 datSp <- lapply(datSp,function(dd){
-    priors <- read_csv(paste0('../../ethenExperiments/covariates/',dd$sequence_id[1],'/priors.csv'))
-    alog <- read_csv(paste0('../../ethenExperiments/covariates/',dd$sequence_id[1],'/exp_alogs.csv'))
+    priors <- read_csv(paste0('data/covariates/',dd$sequence_id[1],'/priors.csv'))
+    alog <- read_csv(paste0('data/covariates/',dd$sequence_id[1],'/exp_alogs.csv'))
     dd <- left_join(dd,priors,by=c("user_id"="student_id"))%>%
         left_join(select(alog,student_id,assigned_condition),by=c("user_id"="student_id"))
     dd
@@ -45,7 +52,7 @@ datSp <- lapply(datSp,function(dd){
 
 dat <- reduce(datSp,bind_rows)
 
-save(dat,file='combinedData.RData')
+save(dat,file='processedData/combinedDataGender.RData')
 
 dat%>%select(starts_with('student_prior'))%>%sapply(function(x) mean(is.na(x)))
 
@@ -68,7 +75,7 @@ dat <- dat%>%filter(!is.na(assigned_condition),assigned_condition!="Not Assigned
     mutate(Z=ifelse(startsWith(assigned_condition,"Treatment"),1,0),
            ctl=ifelse(startsWith(assigned_condition,"Control"),1,0))
 
-save(dat,file='combinedData.RData')
+save(dat,file='processedData/combinedDataGender.RData')
 
 dat%>%group_by(sequence_id)%>%
     summarize(n=n(),p=mean(Z))%>%
@@ -107,15 +114,15 @@ pairwise=function(dd){
                        ))
 }
 
-datPW=datSp%>%
+datPWg=datSp%>%
     map_dfr(pairwise)
 
-datPW$problem_set<- paste0(datPW$problem_set,datPW$comparison)
+datPWg$problem_set<- paste0(datPWg$problem_set,datPWg$comparison)
 
-datPW <- datPW%>%
+datPWg <- datPWg%>%
   group_by(problem_set)%>%
   mutate(cond1=assigned_condition[1],Z=ifelse(assigned_condition==cond1,1,0))%>%
   select(-cond1)%>%
   ungroup()
 
-save(datPW,file='pairwiseData.RData')
+save(datPWg,file='processedData/pairwiseDataGender.RData')

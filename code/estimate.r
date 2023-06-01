@@ -5,34 +5,6 @@ load('processedData/pairwiseData.RData')
 covNames <- names(datPW)[startsWith(names(datPW),'student_prior')]
 p=length(covNames)
 
-exl=datPW%>%group_by(problem_set,model)%>%
-  summarize(
-    n=n(),
-    nt=sum(Z),
-    nc=n-nt,
-    vY=var(completion_target,na.rm=TRUE),
-    vY1=var(completion_target[Z==1],na.rm=TRUE),
-    vY0=var(completion_target[Z==0],na.rm=TRUE),
-    pval=2*(pbinom(min(nt,nc)-1,n,.5)+dbinom(min(nt,nc),n,.5)/2),
-    inclReloop=min(nt,nc)>=3,
-    incl=min(nt,nc)>=p+3,
-    inbetween=min(nc,nt)>=11,
-    excl=min(nc,nt)>=(p+2)*5+1
-  )%>%
-  filter(vY1>0,vY0>0,pval>0.1,excl)
-
-
-### exclusion criteria:
-### inclusive: p+3 observations in each condition, cuz with k predictors you need n>=k+1 to fit ols
-### and we have p+1 predictors (including remnant predictions) and we are dropping one observation
-### each time we fit so....
-### exclusive: min(n_C,n_T)>=(p+2)*5+1 so you have 5 samples per predictor--popular rule of thumb(
-### in-between: min(n_C,n_T)>=10+1 so you have 5 samples per predictor in ReLoop (ie just remnant)
-
-#### hard part: we have 5 sample size-based restrictions (including "none") and 4 p-value-based restrictions, leading to 20 possibilities. DECISION (prior to seeing results! tho this is unverifiable--you have to trust me): report results for restrictive conditions (p>.1, excl) and discuss differences with other sets of restictions. Provide plots for all combinations in the appendix.
-
-
-datPW <- filter(datPW,problem_set%in%exl$problem_set)
 
 
 
@@ -66,7 +38,7 @@ if(file.exists('results/resTotalSlow.RData'))
 source('code/estimateMain.r')
 
 
-Contrasts=map_dfr(resExcl,makeContrast)
+Contrasts=map_dfr(resTotal,makeContrast)
 
 Contrasts$model=factor(Contrasts$model,levels=c('action','student','assignment','combined'))
 
@@ -81,66 +53,73 @@ estSub <- TRUE
 if(file.exists('results/subgroupResults.RData'))
  if(file.mtime('results/subgroupResults.RData')> 
     max(
-      file.mtime('code/estimate.r'),
+      file.mtime('code/estimateSubgroup.r'),
       file.mtime('processedData/pairwiseData.RData'),
       file.mtime('code/reloopFunctions.r')))
         estMain <- FALSE
 
-if(full | estSub){
-  print('subgroup estimation')
-
-  resSubgroups <- LAP(
-                      c(covNames,'completion_prediction')%>%setNames(.,.),
-                      function(covName){
-                        lapply(c(L=1/3,H=2/3), function(p) {
-                          datPW$sub=if(p<.5) datPW[[covName]]<quantile(datPW[[covName]],p) else
-                                                datPW[[covName]]>quantile(datPW[[covName]],p)
-                          datPW%>%
-                          filter(model=='combined')%>%
-                          filter(sub)%>%
-                          split(.,.$problem_set)%>%
-                          map(function(x) if(min(table(x$Z))>9){
-                              try(
-                                cbind(
-                                  allEst(
-                                    Y=x$completion_target,
-                                    Tr=x$Z,Z=as.matrix(x[,covNames]),
-                                    yhat=as.matrix(x[,'completion_prediction']),
-                                    ps=x$problem_set[1],
-                                    model=unique(x$model)),
-                                  nt=sum(x$Z),
-                                  nc=sum(1-x$Z),
-                                  covName=covName,
-                                  side=ifelse(p<.5,"Low","High")
-                            )
-                          )
-                        } else data.frame(
-                          nt=sum(x$Z),
-                          nc=sum(1-x$Z),
-                          covName=covName,
-                          side=ifelse(p<.5,"Low","High"),
-                          ps=x$problem_set[1]
-                        )
-                      )
-                    }
-                        )
-                      }
-        )
-
-  save(resSubgroups,file="results/subgroupResults.RData")
-
-} else{
-  print('skipping subgroup estimation')
-  load('results/subgroupResults.RData')
-}
+source('code/estimateSubgroup.r')
 
 resSub2=NULL
 for(i in 1:10) for(j in 1:2) resSub2=c(resSub2,resSubgroups[[i]][[j]])
 
-resSub2 <- resSub2[map_lgl(resSub2,~.$ps[1]%in%names(resExcl[[1]]))]
+resSub2 <- resSub2[map_lgl(resSub2,~.$ps[1]%in%names(resTotal[[1]]))]
 
 resSub2 <- resSub2[vapply(resSub2,function(x) any(is.finite(x$Var))&min(x$Var,na.rm=TRUE)>1e-10,TRUE)]
+
+save(resSub2,file='results/subgroupResults2.RData')
 
 ContrastsSub=makeContrast(resSub2) #map_dfr(resSub2,makeContrast)
 
 save(ContrastsSub,file='results/contrastsSub.RData')
+
+
+#################################################################
+#### Gender Experiment
+#################################################################
+
+estGen <- TRUE
+if(file.exists('results/resGender.RData'))
+ if(file.mtime('results/resGender.RData')> 
+    max(
+      file.mtime('code/estimateGender.r'),
+      file.mtime('processedData/pairwiseDataGender.RData'),
+      file.mtime('code/reloopFunctions.r')))
+        estMain <- FALSE
+
+source('code/estimateGender.r')
+
+
+ContrastsGender=makeContrast(resGender)
+
+save(ContrastsGender,file='results/contrastsGender.RData')
+
+
+
+################## 
+### Post Stratification
+#################
+
+## from Ethan's email
+inferredGender=c(
+unknown = 24486,
+male = 22397,
+female = 18394,
+mostly_male = 3138,
+mostly_female = 1591,
+andy = 1131)
+
+pmale=sum(inferredGender[c('male','mostly_male')])/sum(inferredGender)
+
+PS <- sapply(unique(ContrastsGender$problem_set),
+             function(ps){
+               resM <- resGender[[paste0('M.',ps)]]
+               resF <- resGender[[paste0('F.',ps)]]
+               Est=pmale*resM[,'Est']+(1-pmale)*resF[,'Est']
+               Var=pmale^2*resM[,'Var']+(1-pmale)^2*resF[,'Var']
+               cbind(Est=Est,Var=Var,resM[,c('method','ps')],model='PS')},
+             simplify=FALSE)
+
+ContrastsPS <- makeContrast(PS)
+
+save(PS,ContrastsPS,file='results/PostStratification.RData')

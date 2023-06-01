@@ -3,6 +3,7 @@
 ######################
 
 load('results/contrasts.RData')
+#load('results/resTotalSlow.RData')
 
 p3<-Contrasts%>%
   filter(model=='combined')%>%
@@ -39,32 +40,34 @@ ggsave('figure/modelResults.jpg', plot=p4,   width=6,height=4)
 ## subgroup analysis plots
 ######################
 
-p1<-ContrastsSub%>%
-  filter(model=='combined')%>%
-  mutate(compTxt=
-              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
-                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
-                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
-         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
-ggplot(aes(compTxt,ssMult))+
-  geom_jitter()+geom_boxplot(outlier.shape=NA)+
-    geom_hline(yintercept=1)+xlab(NULL)+
-  scale_y_continuous(trans="log10")
+load('results/contrastsSub.RData')
+load('results/subgroupResults2.RData')
 
-ContrastsSub%>%
+
+
+
+histDat <- ContrastsSub%>%
 mutate(compTxt=
               c(reloopVsSD='ReLOOP vs. T-Test',
                 reloopPlusVsSD='ReLOOP+ vs. T-Test',
                 reloopPlusVsLoop='ReLOOP+ vs. LOOP')[compSimp],
-         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
+         compTxt=factor(compTxt,levels=unique(compTxt)))
+
+fiveNum <- lapply(split(histDat$ssMult,histDat$compTxt),function(x) as.data.frame(rbind(round(summary(x),2))))
+
+df <- tibble(x=1.5,y=150,compTxt=factor(levels(histDat$compTxt),levels=levels(histDat$compTxt)),fiveNum=fiveNum)
+
+histDat%>%
 ggplot(aes(ssMult))+
   geom_histogram(bins=100,fill=NA,color="black",boundary=1)+
     geom_vline(xintercept=1)+facet_wrap(~compTxt,ncol=1)+
-  scale_x_continuous(trans="log10",breaks=c(.5,.75,1,1.25,1.5,1.75,2,2.5,3,5))+
+  scale_x_continuous(trans="log10",breaks=c(.5,.75,1,1.25,1.5,1.75,2,2.5,3,4,5,7))+
   xlab("Sampling Variance Ratio")+
+  ylab("Count")+
   theme(axis.text.x = element_text(angle = 45,hjust=1)
-  )
-ggsave("../JEDM/figure/subgroupHistograms.jpg",width=4,height=3)
+  )+
+  geom_table(data=df,aes(x=x,y=y,label=fiveNum),size=2.4)
+ggsave("figure/subgroupHistogramsSum.jpg",width=6,height=3)
 
 ssMultC=cut(ContrastsSub$ssMult,c(0,.75,.9,1,1.1,1.25,1.5,2,10))
 table(ssMultC,ContrastsSub$compSimp)
@@ -96,7 +99,7 @@ ggplot(aes(fct_reorder(covName, ssMult, median),ssMult))+
   coord_cartesian(ylim=rng)+
 facet_wrap(~compTxt+side,ncol=4)+scale_y_continuous(name="Samping Variance Ratio",trans="log10",breaks=c(.75,.9,1,1.1,1.25,1.5,2))+
 guides(x =  guide_axis(angle = 90))
-ggsave("../JEDM/figure/subgroupBoxplots2.jpg",width=6.5,height=4)
+ggsave("figure/subgroupBoxplots2.jpg",width=6.5,height=4)
 
 
 p4b<-ContrastsSub%>%
@@ -162,31 +165,10 @@ scale_y_continuous("Sampling Variance Ratio",
                   breaks=log(c(.75,.9,1,1.1,1.25,1.5,2,3,4,5,6,7)),
                   labels = c(.75,.9,1,1.1,1.25,1.5,2,3,4,5,6,7))+
 scale_x_continuous("Total Sample Size",breaks=log(c(50,100,200,500,1000,5000,10000,50000)),labels=c(50,100,200,500,1000,5000,10000,50000))
-ggsave("../JEDM/figure/subgroupSampleSize.jpg",width=6.5,height=3)
-
-  #facet_wrap(~comp,nrow=1)+
-  scale_y_continuous(name= expression(SE(Alternative)^2~"/SE(ReLOOP)"^2),
-                     sec.axis=sec_axis(~.*2,
-                                       name=expression(#""%<-%retteB~POOLeR),#
-                                         ReLOOP~Better%->%""),
-                                       breaks=NULL,labels=NULL,guide=NULL))+
-  theme(axis.title.y.right = element_text(angle = 90),text = element_text(size = 20))+
-  geom_hline(yintercept=1)+xlab(NULL)+
-  ggtitle("Ratios of Sampling Variances")
-
-pdf('results.pdf',width=2,height=2.5)#,units='in',res=72)
-print(p4)
-dev.off()
+ggsave("figure/subgroupSampleSize.jpg",width=6.5,height=3)
 
 
-ContrastsSub%>%
-  filter(compSimp!='reloopPlusVsSD')%>%
-  mutate(compTxt=
-              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
-                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
-                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
-         compTxt=factor(compTxt,levels=unique(compTxt)))%>%
-  select(compSimp,ssMult,n)%>%arrange(compSimp,n,ssMult)%>%filter(ssMult<0.8)
+
 
 #######################################
 ## p-values
@@ -213,8 +195,6 @@ estimates=function(res,estimator){
 pvals=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
   ~map_dfr(resSub2,estimates,estimator=.))
 
-par(mfrow=c(4,1))
-lapply(pvals,function(ee) hist(ee$p))
 
 pvals=map(pvals,~cbind(.,pBH=p.adjust(.$p,method="fdr")))
 pvals=map(pvals,~cbind(.,pBY=p.adjust(.$p,method="BY")))
@@ -226,18 +206,18 @@ Unadjusted=map_dbl(pvals,~sum(.$p<0.05)),
 
 colnames(significance)=c("T-Test","LOOP","ReLOOP","ReLOOP+")
 
-print(xtable(significance),file="subgroupSignificance.tex")
+print(xtable(significance),file="tables/subgroupSignificance.tex")
 
 
 map(pvals,~sum(.$pBY<0.05))
 map(pvals,~mean(.$pBY<0.05))
 
 
-resExcl[[4]]=lapply(1:length(resExcl[[4]]),function(i) cbind(resExcl[[4]][[i]],num=i))
+resTotal[[4]]=lapply(1:length(resTotal[[4]]),function(i) cbind(resTotal[[4]][[i]],num=i))
 
 
 pvalsFull=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
-  ~map_dfr(resExcl[[4]],estimates,estimator=.))
+  ~map_dfr(resTotal[[4]],estimates,estimator=.))
 
 pvalsFull=map(pvalsFull,~cbind(.,pBH=p.adjust(.$p,method="fdr"),pBY=p.adjust(.$p,method="BY")))
 
@@ -246,15 +226,49 @@ Unadjusted=map_dbl(pvalsFull,~sum(.$p<0.05)),
 `Benjamini-Hochberg`=map_dbl(pvalsFull,~sum(.$pBH<0.05)),
 `Benjamini-Yekutieli`=map_dbl(pvalsFull,~sum(.$pBY<0.05)))
 colnames(significanceFull)=c("T-Test","LOOP","ReLOOP","ReLOOP+")
-print(xtable(significanceFull),file="../JEDM/fullSignificance.tex")
+print(xtable(significanceFull),file="tables/fullSignificance.tex")
 
 
 
-map( pvalsFull,~sum(.$p<0.05))
-map( pvalsFull,~mean(.$p<0.05))
+################
+## Inferred Gender Plot
+################
 
-map( pvalsFull,~sum(.$pBH<0.05))
-map( pvalsFull,~mean(.$pBH<0.05))
+load('results/contrastsGender.RData')
 
-map( pvalsFull,~sum(.$pBY<0.05))
-map( pvalsFull,~mean(.$pBY<0.05))
+ContrastsGender%>%
+  mutate(
+    compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt))
+  )%>%
+  ggplot(aes(model,ssMult))+
+  geom_jitter()+geom_boxplot(outlier.shape=NA,width=.5)+facet_wrap(~compTxt,nrow=1)+
+  scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)+theme(axis.text.x = element_text(angle = 45,hjust=1))
+
+ggsave('figure/genderResults.jpg', plot=p4,   width=6,height=4)
+
+
+
+##########################
+### PS Plot
+#########################
+
+load('results/PostStratification.RData')
+
+psPlot <- ContrastsPS%>%
+mutate(
+  dumb="",
+    compTxt=
+              c(reloopVsSD='ReLOOP\nvs.\nT-Test',
+                reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
+                reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
+         compTxt=factor(compTxt,levels=unique(compTxt))
+  )%>%
+  ggplot(aes(dumb,ssMult))+
+  geom_jitter()+geom_boxplot(outlier.shape=NA,width=.5)+facet_wrap(~compTxt,nrow=1)+
+  scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)
+
+  ggsave('figure/postStrat.jpg', plot=psPlot,   width=6,height=4)

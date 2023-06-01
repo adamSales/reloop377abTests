@@ -28,6 +28,6 @@ if(full | estMain){
     }
             )
 
-  save(resTotal,file='results/resTotal.RData')
+  save(resTotal,file=paste0('results/resTotal',S,'.RData'))
 
-} else load('results/resTotal.RData')
+} else load(paste0('results/resTotal',S,'.RData'))

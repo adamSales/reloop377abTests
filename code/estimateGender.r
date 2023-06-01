@@ -21,7 +21,7 @@ if(full | estGen){
                                   yhat=as.matrix(x[,'completion_prediction']),
                                   ps=x$problem_set[1],
                                   model=x$male[1],
-                                  fast=FALSE
+                                  fast=fast
                                 )
                               )
       save(out,file=filename)
@@ -29,6 +29,6 @@ if(full | estGen){
     }
             )
 
-  save(resGender,file='results/resGender.RData')
+  save(resGender,file=paste0('results/resGender',S,'.RData'))
 
-} else load('results/resGender.RData')
+} else load(paste0('results/resGender',S,'.RData'))

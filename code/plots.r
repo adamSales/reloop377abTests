@@ -2,8 +2,8 @@
 ## main analysis plots
 ######################
 
-load('results/contrasts.RData')
-#load('results/resTotalSlow.RData')
+load(paste0('results/contrasts',S,'.Rdata'))
+#load(paste0('results/resTotalSlow.RData')
 
 p3<-Contrasts%>%
   filter(model=='combined')%>%
@@ -40,8 +40,8 @@ ggsave('figure/modelResults.jpg', plot=p4,   width=6,height=4)
 ## subgroup analysis plots
 ######################
 
-load('results/contrastsSub.RData')
-load('results/subgroupResults2.RData')
+load(paste0('results/contrastsSub',S,'.Rdata'))
+load(paste0('results/subgroupResults2',S,'.Rdata'))
 
 
 
@@ -212,12 +212,12 @@ print(xtable(significance),file="tables/subgroupSignificance.tex")
 map(pvals,~sum(.$pBY<0.05))
 map(pvals,~mean(.$pBY<0.05))
 
-
-resTotal[[4]]=lapply(1:length(resTotal[[4]]),function(i) cbind(resTotal[[4]][[i]],num=i))
+resCombined <- resTotal[map_lgl(resTotal,~.$model[1]=='combined')]
+resCombined=lapply(1:length(resCombined),function(i) cbind(resCombined[[i]],num=i))
 
 
 pvalsFull=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
-  ~map_dfr(resTotal[[4]],estimates,estimator=.))
+  ~map_dfr(resCombined,estimates,estimator=.))
 
 pvalsFull=map(pvalsFull,~cbind(.,pBH=p.adjust(.$p,method="fdr"),pBY=p.adjust(.$p,method="BY")))
 
@@ -234,7 +234,7 @@ print(xtable(significanceFull),file="tables/fullSignificance.tex")
 ## Inferred Gender Plot
 ################
 
-load('results/contrastsGender.RData')
+load(paste0('results/contrastsGender',S,'.Rdata'))
 
 ContrastsGender%>%
   mutate(
@@ -242,13 +242,14 @@ ContrastsGender%>%
               c(reloopVsSD='ReLOOP\nvs.\nT-Test',
                 reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
                 reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
-         compTxt=factor(compTxt,levels=unique(compTxt))
+    compTxt=factor(compTxt,levels=unique(compTxt)),
+    model=ifelse(model=="B","Both",model)
   )%>%
   ggplot(aes(model,ssMult))+
   geom_jitter()+geom_boxplot(outlier.shape=NA,width=.5)+facet_wrap(~compTxt,nrow=1)+
-  scale_y_continuous(trans="log10")+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)+theme(axis.text.x = element_text(angle = 45,hjust=1))
+  scale_y_continuous(trans="log10",breaks=c(0.75,0.9,1,1.1,1.25,1.5,1.75,2))+geom_hline(yintercept=1)+ylab("Sampling Variance Ratio")+xlab(NULL)+theme(axis.text.x = element_text(angle = 45,hjust=1))
 
-ggsave('figure/genderResults.jpg', plot=p4,   width=6,height=4)
+ggsave('figure/genderResults.jpg', width=6,height=4)
 
 
 
@@ -256,7 +257,7 @@ ggsave('figure/genderResults.jpg', plot=p4,   width=6,height=4)
 ### PS Plot
 #########################
 
-load('results/PostStratification.RData')
+load(paste0('results/PostStratification',S,'.Rdata'))
 
 psPlot <- ContrastsPS%>%
 mutate(

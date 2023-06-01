@@ -12,11 +12,14 @@ if(full | estSub){
                           filter(sub)%>%
                           split(.,.$problem_set)%>%
                           map(function(x) if(min(table(x$Z))>9){
-                            filename <- paste0('results/miniResults/', x$problem_set,covName,ifelse(p<.5,"Low","High"),".RData")
+                            filename <- paste0('results/miniResults/', 
+                                              x$problem_set[1],covName,
+                                              ifelse(p<.5,"Low","High"),".RData")
                             if(file.exists(filename)){
                               load(filename)
                               return(out)
                             }
+                            #print(x$problem_set[1])
                             out <- try(
                                 cbind(
                                   allEst(
@@ -24,7 +27,8 @@ if(full | estSub){
                                     Tr=x$Z,Z=as.matrix(x[,covNames]),
                                     yhat=as.matrix(x[,'completion_prediction']),
                                     ps=x$problem_set[1],
-                                    model=unique(x$model)),
+                                    model=unique(x$model),
+                                    fast=fast),
                                   nt=sum(x$Z),
                                   nc=sum(1-x$Z),
                                   covName=covName,
@@ -46,9 +50,9 @@ if(full | estSub){
                       }
         )
 
-  save(resSubgroups,file="results/subgroupResults.RData")
+  save(resSubgroups,file=paste0("results/subgroupResults",S,".RData"))
 
 } else{
   print('skipping subgroup estimation')
-  load('results/subgroupResults.RData')
+  load(paste0("results/subgroupResults",S,".RData"))
 }

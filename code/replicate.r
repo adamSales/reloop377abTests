@@ -15,6 +15,7 @@ library(ggpmisc)
 nclust <- commandArgs(TRUE)
 
 full <- FALSE
+fast <- TRUE
 
 if(length(nclust)==0) nclust <- 0 else nclust <- as.numeric(nclust)
 

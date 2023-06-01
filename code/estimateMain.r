@@ -20,7 +20,7 @@ if(full | estMain){
                                   yhat=as.matrix(x[,'completion_prediction']),
                                   ps=x$problem_set[1],
                                   model=x$model[1],
-                                  fast=FALSE
+                                  fast=fast
                                 )
                               )
       save(out,file=filename)
@@ -28,6 +28,6 @@ if(full | estMain){
     }
             )
 
-  save(resTotal,file='results/resTotalSlow.RData')
+  save(resTotal,file='results/resTotal.RData')
 
-} else load('results/resTotalSlow.RData')
+} else load('results/resTotal.RData')

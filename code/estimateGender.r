@@ -21,7 +21,7 @@ if(full | estGen){
                                   yhat=as.matrix(x[,'completion_prediction']),
                                   ps=x$problem_set[1],
                                   model=x$male[1],
-                                  fast=FALSE
+                                  fast=fast
                                 )
                               )
       save(out,file=filename)

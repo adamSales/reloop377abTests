@@ -50,9 +50,9 @@ if(full | estSub){
                       }
         )
 
-  save(resSubgroups,file="results/subgroupResults.RData")
+  save(resSubgroups,file=paste0("results/subgroupResults",S,".RData"))
 
 } else{
   print('skipping subgroup estimation')
-  load('results/subgroupResults.RData')
+  load(paste0("results/subgroupResults",S,".RData"))
 }

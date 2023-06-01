@@ -29,6 +29,6 @@ if(full | estGen){
     }
             )
 
-  save(resGender,file='results/resGender.RData')
+  save(resGender,file=paste0('results/resGender',S,'.RData'))
 
-} else load('results/resGender.RData')
+} else load(paste0('results/resGender',S,'.RData'))

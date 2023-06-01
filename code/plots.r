@@ -212,12 +212,12 @@ print(xtable(significance),file="tables/subgroupSignificance.tex")
 map(pvals,~sum(.$pBY<0.05))
 map(pvals,~mean(.$pBY<0.05))
 
-
-resTotal[[4]]=lapply(1:length(resTotal[[4]]),function(i) cbind(resTotal[[4]][[i]],num=i))
+resCombined <- resTotal[map_lgl(resTotal,~.$model[1]=='combined')]
+resCombined=lapply(1:length(resCombined),function(i) cbind(resCombined[[i]],num=i))
 
 
 pvalsFull=map(c( 'simpDiff','loop','reloopOLS','reloopPlus')%>%setNames(.,.),
-  ~map_dfr(resTotal[[4]],estimates,estimator=.))
+  ~map_dfr(resCombined,estimates,estimator=.))
 
 pvalsFull=map(pvalsFull,~cbind(.,pBH=p.adjust(.$p,method="fdr"),pBY=p.adjust(.$p,method="BY")))
 

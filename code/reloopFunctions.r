@@ -8,7 +8,7 @@ rebar <- function(Y,Tr,yhat,...)
   simpDiff(Y-yhat,Tr)
 
 allEst <- function(Y,Tr,Z,yhat,ps="ps",model="mod",fast=TRUE){
-
+  set.seed(613)
   stopifnot(length(model)==1)
   stopifnot(length(ps)==1)
   out <- as.data.frame(

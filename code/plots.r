@@ -1,6 +1,7 @@
 ######################
 ## main analysis plots
 ######################
+set.seed(613)
 
 load(paste0('results/contrasts',S,'.Rdata'))
 #load(paste0('results/resTotalSlow.RData')

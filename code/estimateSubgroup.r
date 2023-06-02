@@ -50,7 +50,8 @@ if(full | estSub){
                       }
         )
 
-  save(resSubgroups,file=paste0("results/subgroupResults",S,".RData"))
+  sv <- try(save(resSubgroups,file=paste0("results/subgroupResults",S,".RData")))
+  if(!keepIntermediateResults) file.remove("results/miniResults/*")
 
 } else{
   print('skipping subgroup estimation')

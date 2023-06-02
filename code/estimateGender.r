@@ -30,5 +30,6 @@ if(full | estGen){
             )
 
   save(resGender,file=paste0('results/resGender',S,'.RData'))
+  if(!keepIntermediateResults) file.remove("results/miniResults/*")
 
 } else load(paste0('results/resGender',S,'.RData'))

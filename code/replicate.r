@@ -17,6 +17,12 @@ nclust <- commandArgs(TRUE)
 full <- FALSE
 fast <- TRUE
 
+### the code saves each result in a separate file (in the "miniResults" folder), in case it
+### gets interrupted, then deletes these once all of the results are saved in larger
+### files. By change the option below to "TRUE" you can keep the intermediate files as well 
+### (but beware that if you re-run the code it will just load them in, rather than re-estimate anything). 
+keepIntermediateResults <- FALSE 
+
 if(length(nclust)==0) nclust <- 0 else nclust <- as.numeric(nclust)
 
 print(nclust)

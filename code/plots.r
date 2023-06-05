@@ -163,10 +163,10 @@ geom_line(mapping=aes(x=log(nt+nc),y=ypred),color='black')+#,linewidth=2)+
 facet_wrap(~compTxt)+#,scales="free_y")+
 geom_hline(yintercept = 0)+
 scale_y_continuous("Sampling Variance Ratio",
-                  breaks=log(c(.75,.9,1,1.1,1.25,1.5,2,3,4,5,6,7)),
-                  labels = c(.75,.9,1,1.1,1.25,1.5,2,3,4,5,6,7))+
+                  breaks=log(c(.5,.75,1,1.25,1.5,2,3,4,5,6,7)),
+                  labels = c(.5,.75,1,1.25,1.5,2,3,4,5,6,7))+
 scale_x_continuous("Total Sample Size",breaks=log(c(50,100,200,500,1000,5000,10000,50000)),labels=c(50,100,200,500,1000,5000,10000,50000))
-ggsave("figure/subgroupSampleSize.jpg",width=6.5,height=3)
+ggsave("figure/subgroupSampleSizeFixed.jpg",width=6.5,height=3)
 
 
 
@@ -244,7 +244,7 @@ ContrastsGender%>%
                 reloopPlusVsSD='ReLOOP+\nvs.\nT-Test',
                 reloopPlusVsLoop='ReLOOP+\nvs.\nLOOP')[compSimp],
     compTxt=factor(compTxt,levels=unique(compTxt)),
-    model=ifelse(model=="B","Both",model)
+    model=c(M="M",B="Both",F="O")[model] 
   )%>%
   ggplot(aes(model,ssMult))+
   geom_jitter()+geom_boxplot(outlier.shape=NA,width=.5)+facet_wrap(~compTxt,nrow=1)+
